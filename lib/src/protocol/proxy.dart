@@ -14,7 +14,7 @@ class Proxy {
 }
 
 class UnknownProxy extends Proxy {
-  UnknownProxy(int id, Context context) : super(id);
+  UnknownProxy(super.id, Context context);
 }
 
 abstract class Dispatcher {

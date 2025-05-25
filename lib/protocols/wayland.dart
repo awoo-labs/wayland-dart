@@ -33,10 +33,9 @@
 library client;
 
 import 'package:wayland/wayland.dart';
-import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:result_dart/result_dart.dart';
+// AWOO-MIXINS
 
 /// fatal error event
 ///

@@ -48,7 +48,7 @@ class Generator {
 
   Future<void> run() async {
     if (inputFile.isEmpty || outputFile.isEmpty) {
-      throw Exception('inbut file or output file is empty');
+      throw Exception('input file or output file is empty');
     }
 
     final xmlContent = await getInputFile(inputFile);
@@ -66,9 +66,7 @@ class Generator {
     output.writeln(protocol.copyright.comments());
     output.writeln();
 
-    output.writeln('library $packageName;');
-    output.writeln();
-
+    output.writeln("library $packageName;");
     output.writeln("import 'package:wayland/wayland.dart';");
 
     if (protocol.name != 'wayland') {
@@ -84,6 +82,7 @@ class Generator {
     output.writeln("import 'dart:convert';");
     output.writeln("import 'dart:typed_data';");
     output.writeln("import 'package:result_dart/result_dart.dart';");
+    output.writeln("// AWOO-MIXINS");
 
     // Interfaces
     for (final interface in protocol.interfaces) {
@@ -97,34 +96,7 @@ class Generator {
     }
 
     await outFile.writeAsString(output.toString());
-    if (format) await tryFmt(outFile.absolute.path);
     logLn('Generated Dart code written to $outputFile');
-  }
-
-  Future tryFmt(String path) async {
-    var dart = await findDartExecutable();
-
-    if (dart == null) {
-      logLn('Could not find dart executable');
-      return;
-    }
-    await Process.run(dart, ['format', "--fix", path]);
-  }
-
-  Future<String?> findDartExecutable() async {
-    try {
-      var result = await Process.run('which', ['dart']);
-      if (result.exitCode == 0) {
-        return result.stdout.toString().trim();
-      } else {
-        logLn(
-            'Could not find dart executable: ${result.stderr.toString().trim()}');
-        return null;
-      }
-    } catch (e) {
-      logLn('Could not find dart executable');
-    }
-    return null;
   }
 
   Future<String> getInputFile(String file) async {

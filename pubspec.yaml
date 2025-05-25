@@ -1,5 +1,6 @@
 name: wayland
-description: A sample command-line application.
+description: Awoo Labs' updated wayland-dart bindings.
+publish_to: none
 version: 1.0.0
 # repository: https://github.com/my_org/my_repo
 environment:
@@ -19,6 +20,8 @@ dependencies:
       url: https://github.com/kingwill101/dart_native_socket
   logging: ^1.2.0
   pcanvas: ^1.1.0
+  ffi: any
+
 dev_dependencies:
   ffigen: ^13.0.0
   lints: ^4.0.0

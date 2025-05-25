@@ -61,4 +61,8 @@ class App {
 }
 ```
 
-see the example directory [example](example) for how to use this library.
+~~see the example directory [example](example) for how to use this library.~~
+
+## Awoo-Mixins
+
+This distribution of `wayland-dart` comes with additions named Awoo-Mixins. They ensure `wayland-dart` is easy to maintain during times where Wayland rapidly updates. Please view the [awoo-mixins](awoo-mixins) directory to see their usage in development and updating.

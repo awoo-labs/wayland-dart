@@ -1,0 +1,25 @@
+map:
+  staging:
+    cursor-shape:
+      imports:
+        unstable:
+          - tablet
+    ext-image-capture-source:
+      imports:
+        staging:
+          - ext-foreign-toplevel-list
+    ext-image-copy-capture:
+      imports:
+        staging:
+          - ext-image-capture-source
+    match:
+      - pattern: "(xdg-toplevel-*|xdg-dialog)"
+        imports:
+          stable:
+            - xdg-shell
+  unstable:
+    xdg-decoration:
+      imports:
+        stable:
+          - xdg-shell
+throwaway: # Not going to get rid of files at this time

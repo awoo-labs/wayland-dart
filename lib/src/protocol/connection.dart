@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:wayland/src/protocol/log.dart';
 
-
 class WaylandConnection {
   RawSocket? _socket;
 
@@ -23,7 +22,6 @@ class WaylandConnection {
         0,
       );
 
-
       _socket?.readEventsEnabled = true;
       _socket?.writeEventsEnabled = true;
     } catch (e) {
@@ -36,8 +34,6 @@ class WaylandConnection {
     _socket?.close();
     _socket = null;
   }
-
-
 
   Future<void> sendMessage(Uint8List message) async {
     if (_socket != null) {
@@ -53,21 +49,20 @@ class WaylandConnection {
   }
 }
 
-
-  String waylandSocketPath() {
-    if (Platform.environment.containsKey('WAYLAND_SOCKET')) {
-      // Use the pre-established connection
-      final fd = int.parse(Platform.environment['WAYLAND_SOCKET']!);
-      return 'fd://$fd';
-    }
-
-    final runtimeDir = Platform.environment['XDG_RUNTIME_DIR'];
-    if (runtimeDir == null) {
-      throw Exception('XDG_RUNTIME_DIR is not set');
-    }
-
-    final display = Platform.environment['WAYLAND_DISPLAY'] ?? 'wayland-0';
-
-    if (Platform.environment['IGNORE_DISPLAY'] != null) return display;
-    return '$runtimeDir/$display';
+String waylandSocketPath() {
+  if (Platform.environment.containsKey('WAYLAND_SOCKET')) {
+    // Use the pre-established connection
+    final fd = int.parse(Platform.environment['WAYLAND_SOCKET']!);
+    return 'fd://$fd';
   }
+
+  final runtimeDir = Platform.environment['XDG_RUNTIME_DIR'];
+  if (runtimeDir == null) {
+    throw Exception('XDG_RUNTIME_DIR is not set');
+  }
+
+  final display = Platform.environment['WAYLAND_DISPLAY'] ?? 'wayland-0';
+
+  if (Platform.environment['IGNORE_DISPLAY'] != null) return display;
+  return '$runtimeDir/$display';
+}

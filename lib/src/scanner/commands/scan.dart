@@ -4,6 +4,7 @@ import 'package:args/command_runner.dart';
 import 'package:wayland/src/scanner/generator.dart';
 import 'package:wayland/src/scanner/types.dart';
 import 'package:yaml/yaml.dart';
+import 'package:wayland/src/scanner/awoo-mixins/import-mapper.dart';
 
 const protocolCacheDir = '.wayland-protocol-cache';
 
@@ -14,6 +15,7 @@ class ScanCommand extends Command {
   String prefix = '';
   String suffix = '';
   late Protocol protocol;
+  late ImportMapper mapper;
 
   @override
   String get name => 'scan';
@@ -30,6 +32,9 @@ class ScanCommand extends Command {
       ..addOption('pkg', help: 'Dart package name', defaultsTo: 'wayland')
       ..addOption('prefix', help: 'Specify prefix to trim', defaultsTo: null)
       ..addOption('suffix', help: 'Specify suffix to trim', defaultsTo: null)
+      ..addOption('import-map',
+          help: '(Awoo addition) import map file',
+          defaultsTo: 'awoo-mixins/import-map.yaml')
       ..addOption('format',
           help: 'format generated code using dart format', defaultsTo: null)
       ..addOption('clean',
@@ -48,6 +53,9 @@ class ScanCommand extends Command {
     packageName = argResults?['pkg'] ?? '';
     prefix = argResults?['prefix'] as String? ?? '';
     suffix = argResults?['suffix'] as String? ?? '';
+    // Initialize import mapper
+    final mapPath = argResults?['import-map'] as String;
+    mapper = ImportMapper(mapPath: mapPath);
     var generationDir = argResults?['generation-dir'] as String;
 
     bool format = false;
@@ -69,14 +77,12 @@ class ScanCommand extends Command {
       final yamlMap = loadYaml(yamlContent) as YamlMap;
       final protocolsList = yamlMap['protocols'] as YamlList;
 
-      var imports = [];
+      // (Awoo addition) Apply import-map to each protocol
 
       var generators = protocolsList.map((protocol) {
         final protocolMap = protocol as YamlMap;
         final importPath = "$generationDir/${protocolMap['output']}";
-        imports.add(protocolMap['output']);
 
-        // var deps = yamlMap['protocols'] as YamlList;
         List<String> dependencies = [];
         var yamlDeps = protocolMap['dependencies'] as YamlList?;
 
@@ -101,18 +107,97 @@ class ScanCommand extends Command {
         return generator.run();
       }));
 
+      if (format) {
+        await tryFmt();
+        await tryFix();
+      }
+
+      for (var generator in generators) {
+        var importDeps = mapper.applyToInterface(generator.outputFile);
+        if (importDeps.isNotEmpty) {
+          File f = File(generator.outputFile);
+          var content = f.readAsStringSync();
+          var imports = '';
+          for (var dep in importDeps) {
+            imports += "import '$dep';\n";
+          }
+          content = content.replaceFirst('// AWOO-MIXINS', imports);
+          f.writeAsStringSync(content);
+          logLn('Added imports to ${generator.outputFile}');
+        }
+      }
+
       return;
     }
 
+    // Single-file scan: auto-load dependencies from protocols.yaml if present
+    var importDeps = <String>[];
+    var protocolsFile = File('protocols.yaml');
+    if (protocolsFile.existsSync()) {
+      final yamlMap = loadYaml(protocolsFile.readAsStringSync()) as YamlMap;
+      for (var proto in yamlMap['protocols'] as YamlList) {
+        final m = proto as YamlMap;
+        if ((m['input'] as String) == inputFile) {
+          final deps = m['dependencies'] as YamlList?;
+          if (deps != null) importDeps.addAll(deps.cast<String>());
+          break;
+        }
+      }
+    }
+    // Apply import-map for single-file
+    importDeps.addAll(mapper.applyToInterface(outputFile));
     Generator generator = Generator(
         inputFile: inputFile,
         outputFile: "$generationDir/$outputFile",
         packageName: packageName,
         prefix: prefix,
         suffix: suffix,
+        imports: importDeps,
         format: format,
         cacheDir: protocolCacheDir);
     generator.run();
+
+    return; // done
+  }
+
+  void logLn(String message) {
+    print(message);
+  }
+
+  Future tryFmt() async {
+    var dart = await findDartExecutable();
+
+    if (dart == null) {
+      logLn('Could not find dart executable');
+      return;
+    }
+    await Process.run(dart, ['format', 'lib']);
+  }
+
+  Future tryFix() async {
+    var dart = await findDartExecutable();
+
+    if (dart == null) {
+      logLn('Could not find dart executable');
+      return;
+    }
+    await Process.run(dart, ['fix', 'lib', '--apply']);
+  }
+
+  Future<String?> findDartExecutable() async {
+    try {
+      var result = await Process.run('which', ['dart']);
+      if (result.exitCode == 0) {
+        return result.stdout.toString().trim();
+      } else {
+        logLn(
+            'Could not find dart executable: ${result.stderr.toString().trim()}');
+        return null;
+      }
+    } catch (e) {
+      logLn('Could not find dart executable');
+    }
+    return null;
   }
 
   parseProtocolsYaml(String yamlContent) {
