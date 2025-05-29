@@ -1,3 +1,6 @@
+# **ALERT**
+This library will no longer be maintained or updated by me. I will be primarily moving away from Dart.
+
 # Dart Wayland Client Library
 
 A robust and efficient Dart implementation of the Wayland client protocols. This library provides a comprehensive set of tools for building Wayland clients in Dart, offering seamless integration with the Wayland display server system.
